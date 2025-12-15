@@ -1,0 +1,24 @@
+# Dockerfile.api
+FROM python:3.11-slim
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制依赖文件并安装Python依赖
+COPY requirements.txt .
+ENV PIP_NO_THREADS=1 PIP_PROGRESS_BAR=off
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 复制应用代码
+COPY backend/ ./backend/
+COPY utils/ ./utils/
+
+# 创建数据目录（用于存放SQLite数据库等）
+RUN mkdir -p /app/data
+
+# 暴露端口
+EXPOSE 8000
+
+# 启动命令（--reload 参数用于开发环境热重载）
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

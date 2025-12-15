@@ -1,0 +1,44 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app/backend
+      - ./data:/app/data
+    # 关键1：完全禁用热重载，使用最简启动命令
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000
+    # 关键2：预防性设置所有已知的“单线程”环境变量
+    environment:
+      - OMP_NUM_THREADS=1
+      - OPENBLAS_NUM_THREADS=1
+      - MKL_NUM_THREADS=1
+      - JEMALLOC_NARENA=1
+      - PYTHONHASHSEED=0
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./frontend:/app/frontend
+    # 关键3：为前端设置更全面的单线程和禁用选项
+    environment:
+      - OMP_NUM_THREADS=1
+      - OPENBLAS_NUM_THREADS=1
+      - MKL_NUM_THREADS=1
+      - VECLIB_MAXIMUM_THREADS=1
+      - NUMEXPR_NUM_THREADS=1
+      - JEMALLOC_NARENA=1
+      # 彻底关闭Streamlit所有后台线程功能
+      - STREAMLIT_SERVER_ENABLE_WATCHDOG=false
+      - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
+      - STREAMLIT_SERVER_ENABLE_CORS=false
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+      - STREAMLIT_GATHER_USAGE_STATS=false
+    # 关键4：以最简模式启动Streamlit
+    command: streamlit run frontend/app.py --server.port=8501 --server.address=0.0.0.0 --server.headless=true --global.developmentMode=false

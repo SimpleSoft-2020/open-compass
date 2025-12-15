@@ -1,0 +1,22 @@
+# Dockerfile.web
+FROM python:3.11-slim
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制依赖文件并安装Python依赖
+COPY requirements.txt .
+ENV PIP_NO_THREADS=1 PIP_PROGRESS_BAR=off
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 复制前端应用代码
+COPY frontend/ ./frontend/
+
+# 暴露端口
+EXPOSE 8501
+
+# 启动Streamlit应用
+# --server.address=0.0.0.0 允许外部访问
+# --server.port=8501 指定端口
+CMD ["streamlit", "run", "frontend/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
