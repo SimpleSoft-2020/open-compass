@@ -1,0 +1,32 @@
+services:
+  open-compass-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: open_compass_dev
+    volumes:
+      - ./:/home/jovyan/work
+    ports:
+      - "8000:8000"
+      - "8501:8501"
+      - "8888:8888"
+    stdin_open: true
+    tty: true
+    # 关键：command 的缩进必须与 `stdin_open` 对齐
+    command: >
+      bash -x -c "
+        echo '========== 开源罗盘开发环境已启动 ==========';
+        echo '后端 API 文档:  http://localhost:8000/docs';
+        echo '前端应用界面:  http://localhost:8501';
+        echo '==========================================';
+
+        # 1. 启动前端Streamlit服务
+        echo '正在启动前端服务...';
+        streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0 --server.fileWatcherType none &
+        FRONTEND_PID=$$!;
+        echo '前端服务PID: '$${FRONTEND_PID};
+
+        # 2. 启动后端FastAPI服务
+        echo '正在启动后端服务...';
+        exec uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+      "

@@ -1,0 +1,27 @@
+# Dockerfile.dev
+FROM jupyter/datascience-notebook:latest
+
+# 切换到 root 用户以安装系统包
+USER root
+
+# 1. 可选：安装少量系统依赖（如需要编译某些Python包）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# 切换回 jovyan 用户（镜像默认的非root用户）
+USER ${NB_UID}
+
+# 2. 设置工作目录（镜像默认是 /home/jovyan）
+WORKDIR /home/jovyan/work
+
+# 3. 复制依赖清单文件
+COPY requirements.txt .
+
+# 4. 安装项目Python依赖 (使用 pip，镜像中 conda 和 pip 并存)
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# 5. 声明端口（仅文档作用）
+EXPOSE 8000 8501 8888

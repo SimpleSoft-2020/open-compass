@@ -29,7 +29,7 @@ def create_app() -> FastAPI:
     app.include_router(api_router, prefix=settings.api_prefix)
     
     # 挂载静态文件
-    app.mount("/static", StaticFiles(directory="frontend/assets"), name="static")
+    #app.mount("/static", StaticFiles(directory="frontend/assets"), name="static")
     
     # 健康检查端点
     @app.get("/health")
