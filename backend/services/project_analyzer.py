@@ -86,16 +86,21 @@ class ProjectAnalyzer:
                 result["total_contributors"] = len(contributors_data)
                 
                 # 计算活跃贡献者（贡献次数大于平均值的贡献者）
-                contributions = list(contributors_data.values())
+                # 过滤出数值类型的值
+                contributions = [v for v in contributors_data.values() if isinstance(v, (int, float))]
                 if contributions:
                     avg_contributions = sum(contributions) / len(contributions)
+                    # 确保比较的是数值类型
                     active_contributors = [name for name, count in contributors_data.items() 
-                                         if count > avg_contributions]
+                                        if isinstance(count, (int, float)) and count > avg_contributions]
                     result["active_contributors"] = len(active_contributors)
                     
                     # 获取关键贡献者（前5名）
-                    sorted_contributors = sorted(contributors_data.items(), 
-                                              key=lambda x: x[1], reverse=True)[:5]
+                    # 确保只处理数值类型的贡献次数
+                    numeric_contributors = {name: count for name, count in contributors_data.items() 
+                                        if isinstance(count, (int, float))}
+                    sorted_contributors = sorted(numeric_contributors.items(), 
+                                            key=lambda x: x[1], reverse=True)[:5]
                     result["key_contributors"] = [
                         {"name": name, "contributions": count} 
                         for name, count in sorted_contributors
@@ -108,12 +113,12 @@ class ProjectAnalyzer:
                                                             bus_factor_data.get("value", 0))
                 elif isinstance(bus_factor_data, (int, float)):
                     result["bus_factor"] = bus_factor_data
-            
+                    
         except Exception as e:
             print(f"Error analyzing community: {e}")
         
         return result
-    
+
     def _analyze_issues(self, metrics: Dict) -> Dict:
         """分析问题数据"""
         issues_new_data = metrics.get("issues_new", {})
@@ -129,13 +134,21 @@ class ProjectAnalyzer:
         
         try:
             # 获取最近一个月的数据
-            if issues_new_data:
-                latest_month = max(issues_new_data.keys())
-                result["new_issues"] = issues_new_data.get(latest_month, 0)
+            if issues_new_data and isinstance(issues_new_data, dict):
+                if issues_new_data:  # 确保字典不为空
+                    latest_month = max(issues_new_data.keys())
+                    new_issues_val = issues_new_data.get(latest_month, 0)
+                    # 确保值是数字类型
+                    if isinstance(new_issues_val, (int, float)):
+                        result["new_issues"] = new_issues_val
             
-            if issues_closed_data:
-                latest_month = max(issues_closed_data.keys())
-                result["closed_issues"] = issues_closed_data.get(latest_month, 0)
+            if issues_closed_data and isinstance(issues_closed_data, dict):
+                if issues_closed_data:  # 确保字典不为空
+                    latest_month = max(issues_closed_data.keys())
+                    closed_issues_val = issues_closed_data.get(latest_month, 0)
+                    # 确保值是数字类型
+                    if isinstance(closed_issues_val, (int, float)):
+                        result["closed_issues"] = closed_issues_val
             
             # 计算解决效率
             if result["new_issues"] > 0:
@@ -145,8 +158,8 @@ class ProjectAnalyzer:
             
             # 分析响应时间
             if issue_response_data and isinstance(issue_response_data, dict):
-                # 计算平均响应时间
-                response_times = list(issue_response_data.values())
+                # 过滤出数值类型的值
+                response_times = [v for v in issue_response_data.values() if isinstance(v, (int, float))]
                 if response_times:
                     result["avg_response_time"] = round(sum(response_times) / len(response_times), 2)
                     
@@ -169,35 +182,43 @@ class ProjectAnalyzer:
         
         try:
             # 计算PR接受率
-            if change_requests_data and change_requests_accepted_data:
+            if (change_requests_data and isinstance(change_requests_data, dict) and 
+                change_requests_accepted_data and isinstance(change_requests_accepted_data, dict)):
                 # 获取最近有数据的月份
-                common_months = set(change_requests_data.keys()) & set(change_requests_accepted_data.keys())
+                cr_keys = set([k for k, v in change_requests_data.items() if isinstance(v, (int, float))])
+                cra_keys = set([k for k, v in change_requests_accepted_data.items() if isinstance(v, (int, float))])
+                common_months = cr_keys & cra_keys
                 if common_months:
                     latest_month = max(common_months)
                     total_prs = change_requests_data.get(latest_month, 0)
                     accepted_prs = change_requests_accepted_data.get(latest_month, 0)
                     
-                    if total_prs > 0:
-                        result["pr_acceptance_rate"] = round((accepted_prs / total_prs) * 100, 2)
+                    if isinstance(total_prs, (int, float)) and isinstance(accepted_prs, (int, float)):
+                        if total_prs > 0:
+                            result["pr_acceptance_rate"] = round((accepted_prs / total_prs) * 100, 2)
             
             # 获取代码变更量
-            if code_changes_sum_data:
-                latest_month = max(code_changes_sum_data.keys())
-                result["code_changes"] = code_changes_sum_data.get(latest_month, 0)
+            if code_changes_sum_data and isinstance(code_changes_sum_data, dict):
+                if code_changes_sum_data:  # 确保字典不为空
+                    latest_month = max(code_changes_sum_data.keys())
+                    code_changes_val = code_changes_sum_data.get(latest_month, 0)
+                    # 确保值是数字类型
+                    if isinstance(code_changes_val, (int, float)):
+                        result["code_changes"] = code_changes_val
             
             # 根据代码变更量判断活跃度
-            if result["code_changes"] > 10000:
-                result["activity_level"] = "high"
-            elif result["code_changes"] > 1000:
-                result["activity_level"] = "medium"
-            else:
-                result["activity_level"] = "low"
-                
+            if isinstance(result["code_changes"], (int, float)):
+                if result["code_changes"] > 10000:
+                    result["activity_level"] = "high"
+                elif result["code_changes"] > 1000:
+                    result["activity_level"] = "medium"
+                else:
+                    result["activity_level"] = "low"
+                    
         except Exception as e:
             print(f"Error analyzing code quality: {e}")
         
         return result
-    
     def _calculate_newbie_friendly_score(self, metrics: Dict) -> float:
         """
         计算新手友好度分数

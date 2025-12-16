@@ -45,6 +45,23 @@ def show_project_explorer():
     """显示项目探索页面"""
     st.header("项目探索")
     
+    # 隐藏"Made with Streamlit"标识
+    hide_streamlit_style = """
+        <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        </style>
+    """
+    st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+    
+    # 初始化 session state
+    if 'selected_project' not in st.session_state:
+        st.session_state.selected_project = FAMOUS_PROJECTS["Apache"][0]
+    if 'active_tab' not in st.session_state:
+        st.session_state.active_tab = "tab1"
+    if 'manual_input_value' not in st.session_state:
+        st.session_state.manual_input_value = ""
+
     # 项目选择区域
     col1, col2 = st.columns([2, 1])
     
@@ -57,12 +74,25 @@ def show_project_explorer():
         with tab1:
             # 分类选择项目
             selected_category = st.selectbox("选择项目分类", list(FAMOUS_PROJECTS.keys()))
-            selected_project = st.selectbox("选择项目", FAMOUS_PROJECTS[selected_category])
+            selected_in_tab1 = st.selectbox("选择项目", FAMOUS_PROJECTS[selected_category])
+            # 更新 session state 中的项目选择
+            st.session_state.selected_project = selected_in_tab1
+            # 更新当前激活的标签页
+            st.session_state.active_tab = "tab1"
             
         with tab2:
             # 手动输入项目
-            manual_input = st.text_input("输入项目（格式：owner/repo）", placeholder="例如：apache/iotdb")
-            selected_project = manual_input if manual_input else selected_project
+            manual_input = st.text_input("输入项目（格式：owner/repo）", 
+                                       value=st.session_state.manual_input_value,
+                                       placeholder="例如：apache/iotdb",
+                                       key="manual_project_input")
+            # 更新 session state 中的手动输入值
+            st.session_state.manual_input_value = manual_input
+            # 如果用户在tab2中输入了项目，则更新 session state
+            if manual_input:
+                st.session_state.selected_project = manual_input
+            # 更新当前激活的标签页
+            st.session_state.active_tab = "tab2"
             
     with col2:
         st.subheader("操作")
@@ -70,14 +100,14 @@ def show_project_explorer():
         st.caption("点击按钮开始分析所选项目")
         
         # 显示当前选中的项目
-        if selected_project:
-            st.info(f"当前选中项目：\n\n**{selected_project}**")
+        if 'selected_project' in st.session_state and st.session_state.selected_project:
+            st.info(f"当前选中项目：\n\n**{st.session_state.selected_project}**")
     
     # 项目分析结果显示区域
-    if analyze_btn and selected_project:
-        with st.spinner(f"正在分析项目 {selected_project}..."):
+    if analyze_btn and 'selected_project' in st.session_state and st.session_state.selected_project:
+        with st.spinner(f"正在分析项目 {st.session_state.selected_project}..."):
             try:
-                owner, repo = selected_project.split('/')
+                owner, repo = st.session_state.selected_project.split('/')
                 # 获取项目分析数据
                 response = requests.get(f"{API_BASE}/projects/{owner}/{repo}", timeout=15)
                 
@@ -96,6 +126,7 @@ def show_project_explorer():
     elif analyze_btn:
         st.warning("请先选择或输入一个项目")
 
+# 其余函数保持不变...
 def display_project_analysis(data, owner, repo):
     """展示项目分析结果"""
     st.success(f"✅ 成功分析项目 {owner}/{repo}")
