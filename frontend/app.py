@@ -136,29 +136,37 @@ def show_home_page():
 
 def show_project_explorer():
     """显示项目探索页面"""
-    st.header("项目探索")
-    st.info("此功能正在开发中，即将上线...")
+    # 直接引入项目探索页面的实现
+    import sys
+    import os
+    sys.path.append(os.path.join(os.path.dirname(__file__), 'pages'))
     
-    # 占位数据
-    projects = [
-        {"name": "Apache IoTDB", "stars": 3500, "issues": 120, "newbie_friendly": 85},
-        {"name": "OpenDigger", "stars": 1200, "issues": 45, "newbie_friendly": 92},
-        {"name": "EasyGraph", "stars": 800, "issues": 32, "newbie_friendly": 78},
-    ]
-    
-    df = pd.DataFrame(projects)
-    st.dataframe(df, use_container_width=True)
-    
-    # 项目选择器
-    selected = st.selectbox("选择项目查看详情", df["name"].tolist())
-    
-    if selected:
-        st.subheader(f"{selected} 详情")
-        col1, col2, col3 = st.columns(3)
-        col1.metric("⭐ Stars", df[df["name"] == selected]["stars"].values[0])
-        col2.metric("🐛 Issues", df[df["name"] == selected]["issues"].values[0])
-        col3.metric("👶 新手友好度", f"{df[df['name'] == selected]['newbie_friendly'].values[0]}%")
-
+    try:
+        from project_explorer import show_project_explorer as explorer_page
+        explorer_page()
+    except ImportError:
+        st.header("项目探索")
+        st.info("此功能正在开发中，即将上线...")
+        
+        # 占位数据
+        projects = [
+            {"name": "Apache IoTDB", "stars": 3500, "issues": 120, "newbie_friendly": 85},
+            {"name": "OpenDigger", "stars": 1200, "issues": 45, "newbie_friendly": 92},
+            {"name": "EasyGraph", "stars": 800, "issues": 32, "newbie_friendly": 78},
+        ]
+        
+        df = pd.DataFrame(projects)
+        st.dataframe(df, use_container_width=True)
+        
+        # 项目选择器
+        selected = st.selectbox("选择项目查看详情", df["name"].tolist())
+        
+        if selected:
+            st.subheader(f"{selected} 详情")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("⭐ Stars", df[df["name"] == selected]["stars"].values[0])
+            col2.metric("🐛 Issues", df[df["name"] == selected]["issues"].values[0])
+            col3.metric("👶 新手友好度", f"{df[df['name'] == selected]['newbie_friendly'].values[0]}%")
 def show_task_recommendation():
     """显示任务推荐页面"""
     st.header("任务推荐")
