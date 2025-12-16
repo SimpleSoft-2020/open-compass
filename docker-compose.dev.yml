@@ -22,7 +22,13 @@ services:
 
         # 1. 启动前端Streamlit服务
         echo '正在启动前端服务...';
-        streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0 --server.fileWatcherType none &
+        streamlit run frontend/app.py \
+          --server.port 8501 \
+          --server.address 0.0.0.0 \
+          --server.runOnSave true \
+          --global.developmentMode true \
+          --logger.level debug \
+          --browser.gatherUsageStats false &
         FRONTEND_PID=$$!;
         echo '前端服务PID: '$${FRONTEND_PID};
 
