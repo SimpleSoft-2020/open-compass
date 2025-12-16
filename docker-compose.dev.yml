@@ -1,3 +1,6 @@
+# docker-compose.dev.yml
+version: '3.8'
+
 services:
   open-compass-dev:
     build:
@@ -12,16 +15,25 @@ services:
       - "8888:8888"
     stdin_open: true
     tty: true
-    # 关键：command 的缩进必须与 `stdin_open` 对齐
     command: >
-      bash -x -c "
-        echo '========== 开源罗盘开发环境已启动 ==========';
-        echo '后端 API 文档:  http://localhost:8000/docs';
-        echo '前端应用界面:  http://localhost:8501';
-        echo '==========================================';
-
-        # 1. 启动前端Streamlit服务
-        echo '正在启动前端服务...';
+      bash -c "
+        echo '========== 开源罗盘开发环境已启动 ==========' &&
+        echo '后端 API 文档:  http://localhost:8000/docs' &&
+        echo '前端应用界面:  http://localhost:8501' &&
+        echo '==========================================' &&
+        
+        # 启动后端服务
+        echo '正在启动后端服务...' &&
+        uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload &
+        BACKEND_PID=$$! &&
+        echo '后端服务 PID: '$${BACKEND_PID} &&
+        
+        # 等待后端服务启动
+        echo '等待后端服务启动...' &&
+        sleep 5 &&
+        
+        # 启动前端服务
+        echo '正在启动前端服务...' &&
         streamlit run frontend/app.py \
           --server.port 8501 \
           --server.address 0.0.0.0 \
@@ -29,10 +41,13 @@ services:
           --global.developmentMode true \
           --logger.level debug \
           --browser.gatherUsageStats false &
-        FRONTEND_PID=$$!;
-        echo '前端服务PID: '$${FRONTEND_PID};
-
-        # 2. 启动后端FastAPI服务
-        echo '正在启动后端服务...';
-        exec uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+        FRONTEND_PID=$$! &&
+        echo '前端服务 PID: '$${FRONTEND_PID} &&
+        
+        # 等待任一进程结束
+        wait -n &&
+        
+        # 终止所有后台进程
+        kill $${BACKEND_PID} $${FRONTEND_PID} 2>/dev/null ||
+        echo '所有服务已停止'
       "
