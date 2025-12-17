@@ -4,6 +4,7 @@ import axios from "axios";
 
 const ProjectExplorer = () => {
   const [selectedProject, setSelectedProject] = useState("apache/iotdb");
+  const [selectedPlatform, setSelectedPlatform] = useState("github"); // 新增平台选择状态
   const [analysisData, setAnalysisData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -31,6 +32,12 @@ const ProjectExplorer = () => {
     ],
   };
 
+  // 平台选项
+  const platforms = [
+    { value: "github", label: "GitHub" },
+    { value: "gitee", label: "Gitee" },
+  ];
+
   const handleAnalyze = async () => {
     setLoading(true);
     setError(null);
@@ -38,7 +45,9 @@ const ProjectExplorer = () => {
 
     try {
       const [owner, repo] = selectedProject.split("/");
-      const response = await axios.get(`/api/v1/projects/${owner}/${repo}`);
+      const response = await axios.get(
+        `/api/v1/projects/${owner}/${repo}?platform=${selectedPlatform}`
+      );
 
       if (response.data.success) {
         setAnalysisData(response.data.data);
@@ -391,7 +400,7 @@ const ProjectExplorer = () => {
         setRecLoading(true);
         try {
           const response = await axios.get(
-            `/api/v1/projects/${owner}/${repo}/recommendations`
+            `/api/v1/projects/${owner}/${repo}/recommendations?platform=${selectedPlatform}`
           );
           if (response.data.success) {
             setRecommendations(response.data.data.recommendations || []);
@@ -404,7 +413,7 @@ const ProjectExplorer = () => {
       };
 
       fetchRecommendations();
-    }, [owner, repo]);
+    }, [owner, repo, selectedPlatform]);
 
     const priorityColors = {
       high: "🔴",
@@ -714,6 +723,22 @@ const ProjectExplorer = () => {
         <div style={{ flex: 2 }}>
           <h2>选择项目</h2>
 
+          {/* 新增平台选择下拉框 */}
+          <div style={{ marginBottom: "10px" }}>
+            <label>选择平台:</label>
+            <select
+              value={selectedPlatform}
+              onChange={(e) => setSelectedPlatform(e.target.value)}
+              style={{ width: "100%", padding: "8px", marginTop: "5px" }}
+            >
+              {platforms.map((platform) => (
+                <option key={platform.value} value={platform.value}>
+                  {platform.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div style={{ marginBottom: "10px" }}>
             <label>选择项目分类:</label>
             <select
@@ -792,6 +817,10 @@ const ProjectExplorer = () => {
               <strong>当前选中项目：</strong>
             </p>
             <p>{selectedProject}</p>
+            <p>
+              <strong>平台：</strong>
+              {selectedPlatform === "github" ? "GitHub" : "Gitee"}
+            </p>
           </div>
 
           {analysisData && (
